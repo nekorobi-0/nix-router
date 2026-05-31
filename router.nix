@@ -38,36 +38,43 @@
             ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off
         '';
     };
+    systemd.network = {
+        enable = true;
 
-    systemd.network.networks."10-wan" = {
-        matchConfig.Name = "enp1s0";
-
-        networkConfig = {
-            DHCP = "ipv6";
-            IPv6AcceptRA = true;
+        config = {
+        # DUID-EN → DUID-LL に変更
+            dhcpV6Config.DUIDType = "link-layer";
         };
-        ipv6AcceptRAConfig = {
-            DHCPv6Client = "always";
-        };
-        dhcpV6Config = {
-            RapidCommit = false;
-        };
-    };
+        networks."10-wan" = {
+            matchConfig.Name = "enp1s0";
 
-        # LAN
-    systemd.network.networks."20-lan" = {
-        matchConfig.Name = "enp2s0";
-
-        address = [
-            "192.168.1.1/24"
-        ];
-
-        networkConfig = {
-            IPv6SendRA = true;
+            networkConfig = {
+                DHCP = "ipv6";
+                IPv6AcceptRA = true;
+            };
+            ipv6AcceptRAConfig = {
+                DHCPv6Client = "always";
+            };
+            dhcpV6Config = {
+                RapidCommit = false;
+            };
         };
-        dhcpPrefixDelegationConfig = {
-            UplinkInterface = "enp1s0";
-            SubnetId = 1;
+
+            # LAN
+        networks."20-lan" = {
+            matchConfig.Name = "enp2s0";
+
+            address = [
+                "192.168.1.1/24"
+            ];
+
+            networkConfig = {
+                IPv6SendRA = true;
+            };
+            dhcpPrefixDelegationConfig = {
+                UplinkInterface = "enp1s0";
+                SubnetId = 1;
+            };
         };
     };
     services.dnsmasq = {
