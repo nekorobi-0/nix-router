@@ -6,6 +6,6 @@ nix build .#nixosConfigurations.router.config.system.build.isoImage
 
 mkdir -p artifacts
 
-cp -r --remove-destination result artifacts/router.iso
+cp -r -L --remove-destination result artifacts 
 
 echo "ISO copied to artifacts/router.iso"

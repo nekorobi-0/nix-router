@@ -5,7 +5,12 @@
         "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix"
     ];
     boot.loader.systemd-boot.enable = true;
-
+    fonts.packages = with pkgs; [
+        noto-fonts-cjk-jp # 日本語表示用
+        dejavu_fonts      # 基本的な記号・文字用
+        ipafont           # IPAフォント
+        kochi-substitute  # 東芝フォント等
+    ];
     networking = {
         hostName = "router";
 
@@ -20,6 +25,19 @@
 
         enableIPv6 = true;
     };
+    systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
+    systemd.services.ethtool-wan = {
+        description = "Disable checksum offload on WAN";
+        after = [ "network-pre.target" ];
+        before = [ "systemd-networkd.service" ];
+        wantedBy = [ "multi-user.target" ];
+
+        serviceConfig.Type = "oneshot";
+
+        script = ''
+            ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off
+        '';
+    };
 
     systemd.network.networks."10-wan" = {
         matchConfig.Name = "enp1s0";
@@ -28,9 +46,11 @@
             DHCP = "ipv6";
             IPv6AcceptRA = true;
         };
-
+        ipv6AcceptRAConfig = {
+            DHCPv6Client = "always";
+        };
         dhcpV6Config = {
-            WithoutRA = "solicit";
+            RapidCommit = false;
         };
     };
 
@@ -45,6 +65,39 @@
         networkConfig = {
             IPv6SendRA = true;
         };
+        dhcpPrefixDelegationConfig = {
+            UplinkInterface = "enp1s0";
+            SubnetId = 1;
+        };
+    };
+    services.dnsmasq = {
+        enable = true;
+        settings = {
+            interface = "enp2s0";
+
+            dhcp-range = [
+                "192.168.1.100,192.168.1.200,12h"
+            ];
+
+            dhcp-option = [
+                "option:router,192.168.1.1"
+                "option:dns-server,192.168.1.1"
+            ];
+        };
+    };
+    systemd.services.dslite = {
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network-online.target" ];
+
+        serviceConfig.Type = "oneshot";
+
+        script = ''
+            AFTR="2404:1a8:7f01:b::3"
+
+            ip -6 tunnel add dslite mode ipip6 remote "$AFTR" dev enp1s0 || true
+            ip link set dslite up
+            ip route add default dev dslite
+        '';
     };
     services.openssh = {
         enable = true;
@@ -77,6 +130,7 @@
         dig
         bind
         nmap
+        ndisc6
 
         # routing/network
         iproute2
@@ -127,6 +181,7 @@
 
         # tunnels
         "ip6_tunnel"
+        "ip6tnl"
         "sit"
 
         # nft nat
@@ -149,6 +204,5 @@
 
     time.timeZone = "Asia/Tokyo";
 
-    i18n.defaultLocale = "ja_JP.UTF-8";
-    system.stateVersion = "25.11";
+    system.stateVersion = "26.05";
 }
