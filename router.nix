@@ -1,4 +1,4 @@
-{modulesPath, config, pkgs, ... }:
+{modulesPath, config, pkgs, lib, ... }:
 
 {
     imports = [
@@ -24,6 +24,7 @@
         };
 
         enableIPv6 = true;
+        networkmanager.enable = lib.mkForce false;
     };
     systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
     systemd.services.ethtool-wan = {
@@ -47,7 +48,6 @@
         };
         networks."10-wan" = {
             matchConfig.Name = "enp1s0";
-
             networkConfig = {
                 DHCP = "ipv6";
                 IPv6AcceptRA = true;
@@ -67,13 +67,14 @@
             address = [
                 "192.168.1.1/24"
             ];
-
             networkConfig = {
                 IPv6SendRA = true;
+                DHCPPrefixDelegation = true;
             };
             dhcpPrefixDelegationConfig = {
                 UplinkInterface = "enp1s0";
                 SubnetId = 1;
+                Announce = true;
             };
         };
     };
