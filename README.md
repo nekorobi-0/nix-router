@@ -1,5 +1,5 @@
 # NixOSによるXpass対応ルーターを作るだけ。
-
+**Warning:まだIPv6しか繋がりません。WIPです**
 ## 概要
 
 このリポジトリは、Nix Flake でルーター用の NixOS ISO をビルドするための最小構成です。
