@@ -1,8 +1,7 @@
 
 #!/usr/bin/env bash
 set -e
-
-nix build .#nixosConfigurations.router.config.system.build.isoImage
+nix build path:.#nixosConfigurations.router.config.system.build.isoImage
 
 mkdir -p artifacts
 
