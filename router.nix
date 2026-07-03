@@ -136,7 +136,7 @@ in
       dhcp-range = "172.16.1.11,172.16.1.99,12h";
       dhcp-option = [
         "option:router,172.16.1.1"
-        "option:dns-server,172.16.1.1"
+        "option:dns-server,8.8.8.8"
       ];
       port = 0;
     };
