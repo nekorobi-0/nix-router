@@ -6,6 +6,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   min-height: 100vh;
@@ -39,6 +40,26 @@ h1 { margin: .25rem 0 0; font-size: clamp(2rem, 6vw, 4rem); }
 h2 { font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; }
 h3 { margin: 0; }
 
+.tabs {
+  display: flex;
+  gap: .35rem;
+  margin-top: 2rem;
+  border-bottom: 1px solid #20332c;
+}
+
+.tabs a {
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  padding: .8rem 1rem;
+  color: #70837b;
+  font-size: .85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tabs a:hover { color: #edf4f0; }
+.tabs a.active { border-color: #69e2a9; color: #69e2a9; }
+
 .badge, .state {
   border: 1px solid #345248;
   border-radius: 99px;
@@ -61,6 +82,7 @@ h3 { margin: 0; }
   background: #20332c;
 }
 
+.view > .summary { margin-top: 3rem; }
 .summary article { padding: 1.4rem; background: #0d1915; }
 .summary strong { display: block; margin-top: .6rem; font: 600 1.1rem ui-monospace, monospace; }
 
@@ -78,6 +100,21 @@ h3 { margin: 0; }
   background: rgba(13, 25, 21, .85);
 }
 
+.page-heading { margin: 3rem 0 0; }
+.page-heading h2 { margin: .35rem 0; font-size: clamp(1.8rem, 4vw, 2.8rem); text-transform: none; }
+.bgp-stats { grid-template-columns: repeat(4, 1fr); }
+.bgp-details { display: grid; gap: 1rem; }
+.peer-detail {
+  min-width: 0;
+  border: 1px solid #20332c;
+  border-radius: 14px;
+  padding: 1.5rem;
+  background: rgba(13, 25, 21, .85);
+}
+.peer-detail .eyebrow { margin: 0 0 .35rem; }
+.detail-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.detail-columns dl { margin-bottom: 0; }
+
 dl { margin: 1.25rem 0; }
 dl div { display: flex; justify-content: space-between; padding: .3rem 0; }
 dd { margin: 0; color: #a9b9b2; font: .8rem ui-monospace, monospace; }
@@ -91,5 +128,6 @@ small, .empty { color: #70837b; }
 
 @media (max-width: 650px) {
   main { padding-top: 2rem; }
-  .summary { grid-template-columns: 1fr; }
+  .summary, .bgp-stats, .detail-columns { grid-template-columns: 1fr; }
+  .detail-columns { gap: 0; }
 }

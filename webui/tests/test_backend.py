@@ -41,10 +41,14 @@ def test_bgp_status(monkeypatch) -> None:
             "as": 65000,
             "peers": {
                 "192.168.100.2": {
-                    "remoteAs": 65100,
-                    "state": "Established",
-                    "peerUptime": "01:02:03",
-                    "pfxRcd": 12,
+                "remoteAs": 65100,
+                "localAs": 65000,
+                "state": "Established",
+                "peerUptime": "01:02:03",
+                "pfxRcd": 12,
+                "pfxSnt": 8,
+                "msgRcvd": 20,
+                "msgSent": 21,
                 },
             },
         },
@@ -56,3 +60,5 @@ def test_bgp_status(monkeypatch) -> None:
     assert result["routerId"] == "192.168.100.1"
     assert result["peers"][0]["state"] == "Established"
     assert result["peers"][0]["prefixesReceived"] == 12
+    assert result["peers"][0]["prefixesSent"] == 8
+    assert result["peers"][0]["messagesSent"] == 21

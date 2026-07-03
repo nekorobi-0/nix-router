@@ -59,10 +59,56 @@ function bgpPeerCard(peer) {
     </article>`;
 }
 
+function metric(label, value) {
+  return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value ?? "—")}</strong></article>`;
+}
+
+function detailRow(label, value) {
+  return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value ?? "—")}</dd></div>`;
+}
+
+function bgpPeerDetails(peer) {
+  const established = peer.state === "Established";
+  return `
+    <article class="peer-detail">
+      <div class="interface-heading">
+        <div>
+          <p class="eyebrow">BGP PEER</p>
+          <h3>${escapeHtml(peer.address)}</h3>
+        </div>
+        <span class="state ${established ? "up" : "down"}">${escapeHtml(peer.state)}</span>
+      </div>
+      <div class="detail-columns">
+        <dl>
+          ${detailRow("REMOTE AS", peer.remoteAs)}
+          ${detailRow("LOCAL AS", peer.localAs)}
+          ${detailRow("UPTIME", peer.uptime)}
+          ${detailRow("PEER STATE", peer.peerState)}
+          ${detailRow("SOFTWARE", peer.softwareVersion)}
+        </dl>
+        <dl>
+          ${detailRow("PREFIXES RECEIVED", peer.prefixesReceived)}
+          ${detailRow("PREFIXES SENT", peer.prefixesSent)}
+          ${detailRow("MESSAGES RECEIVED", peer.messagesReceived)}
+          ${detailRow("MESSAGES SENT", peer.messagesSent)}
+        </dl>
+        <dl>
+          ${detailRow("INPUT QUEUE", peer.inputQueue)}
+          ${detailRow("OUTPUT QUEUE", peer.outputQueue)}
+          ${detailRow("CONNECTIONS", peer.connectionsEstablished)}
+          ${detailRow("DROPPED", peer.connectionsDropped)}
+        </dl>
+      </div>
+    </article>`;
+}
+
 function renderBgp(bgp) {
   if (!bgp?.available) {
     $("#bgp-summary").textContent = "取得不可";
     $("#bgp").innerHTML = "<p class=\"empty\">FRRからBGPステータスを取得できません。</p>";
+    $("#bgp-detail-heading").textContent = "FRRからBGPステータスを取得できません。";
+    $("#bgp-stats").innerHTML = "";
+    $("#bgp-details").innerHTML = "";
     return;
   }
 
@@ -71,6 +117,30 @@ function renderBgp(bgp) {
   $("#bgp").innerHTML = bgp.peers.length
     ? bgp.peers.map(bgpPeerCard).join("")
     : "<p class=\"empty\">BGPピアが設定されていません。</p>";
+
+  $("#bgp-detail-heading").textContent =
+    `Router ID ${bgp.routerId || "—"} · AS${bgp.localAs ?? "—"} · VRF ${bgp.vrfName || "default"}`;
+  $("#bgp-stats").innerHTML = [
+    metric("ROUTES", bgp.routeCount),
+    metric("PEERS", bgp.peerCount ?? bgp.peers.length),
+    metric("FAILED PEERS", bgp.failedPeers),
+    metric("TABLE VERSION", bgp.tableVersion),
+  ].join("");
+  $("#bgp-details").innerHTML = bgp.peers.length
+    ? bgp.peers.map(bgpPeerDetails).join("")
+    : "<p class=\"empty\">BGPピアが設定されていません。</p>";
+}
+
+function route() {
+  const name = location.hash === "#/bgp" ? "bgp" : "overview";
+  document.querySelectorAll(".view").forEach((view) => {
+    view.hidden = view.id !== `view-${name}`;
+  });
+  document.querySelectorAll("[data-route]").forEach((tab) => {
+    const active = tab.dataset.route === name;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-current", active ? "page" : "false");
+  });
 }
 
 async function refresh() {
@@ -101,4 +171,6 @@ async function refresh() {
   }
 }
 
+window.addEventListener("hashchange", route);
+route();
 refresh();

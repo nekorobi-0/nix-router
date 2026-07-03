@@ -91,13 +91,28 @@ def bgp_status() -> dict[str, Any]:
         "available": bool(family),
         "routerId": family.get("routerId"),
         "localAs": family.get("as"),
+        "vrfName": family.get("vrfName"),
+        "tableVersion": family.get("tableVersion"),
+        "routeCount": family.get("ribCount"),
+        "peerCount": family.get("peerCount"),
+        "failedPeers": family.get("failedPeers"),
         "peers": [
             {
                 "address": address,
+                "softwareVersion": peer.get("softwareVersion"),
                 "remoteAs": peer.get("remoteAs"),
+                "localAs": peer.get("localAs"),
                 "state": peer.get("state", "Unknown"),
+                "peerState": peer.get("peerState"),
                 "uptime": peer.get("peerUptime"),
+                "messagesReceived": peer.get("msgRcvd"),
+                "messagesSent": peer.get("msgSent"),
+                "inputQueue": peer.get("inq"),
+                "outputQueue": peer.get("outq"),
                 "prefixesReceived": peer.get("pfxRcd"),
+                "prefixesSent": peer.get("pfxSnt"),
+                "connectionsEstablished": peer.get("connectionsEstablished"),
+                "connectionsDropped": peer.get("connectionsDropped"),
             }
             for address, peer in peers.items()
             if isinstance(peer, dict)

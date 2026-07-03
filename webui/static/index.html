@@ -18,35 +18,57 @@
         <div id="health" class="badge pending">確認中</div>
       </header>
 
-      <section class="summary" aria-label="システム概要">
-        <article>
-          <span>UPTIME</span>
-          <strong id="uptime">—</strong>
-        </article>
-        <article>
-          <span>LOAD AVERAGE</span>
-          <strong id="load">—</strong>
-        </article>
-        <article>
-          <span>UPDATED</span>
-          <strong id="updated">—</strong>
-        </article>
-      </section>
+      <nav class="tabs" aria-label="画面切り替え">
+        <a href="#/overview" data-route="overview">概要</a>
+        <a href="#/bgp" data-route="bgp">BGP詳細</a>
+      </nav>
 
-      <section>
-        <div class="section-title">
-          <h2>Interfaces</h2>
-        </div>
-        <div id="interfaces" class="interfaces"></div>
-      </section>
+      <div id="view-overview" class="view">
+        <section class="summary" aria-label="システム概要">
+          <article>
+            <span>UPTIME</span>
+            <strong id="uptime">—</strong>
+          </article>
+          <article>
+            <span>LOAD AVERAGE</span>
+            <strong id="load">—</strong>
+          </article>
+          <article>
+            <span>UPDATED</span>
+            <strong id="updated">—</strong>
+          </article>
+        </section>
 
-      <section class="bgp-section">
-        <div class="section-title">
-          <h2>BGP</h2>
-          <span id="bgp-summary" class="muted">確認中…</span>
-        </div>
-        <div id="bgp" class="interfaces"></div>
-      </section>
+        <section>
+          <div class="section-title">
+            <h2>Interfaces</h2>
+          </div>
+          <div id="interfaces" class="interfaces"></div>
+        </section>
+
+        <section class="bgp-section">
+          <div class="section-title">
+            <h2>BGP</h2>
+            <span id="bgp-summary" class="muted">確認中…</span>
+          </div>
+          <div id="bgp" class="interfaces"></div>
+        </section>
+      </div>
+
+      <div id="view-bgp" class="view" hidden>
+        <section class="page-heading">
+          <p class="eyebrow">ROUTING PROTOCOL</p>
+          <h2>BGP Details</h2>
+          <p id="bgp-detail-heading" class="muted">確認中…</p>
+        </section>
+        <section id="bgp-stats" class="summary bgp-stats"></section>
+        <section>
+          <div class="section-title">
+            <h2>Peers</h2>
+          </div>
+          <div id="bgp-details" class="bgp-details"></div>
+        </section>
+      </div>
 
       <p id="error" class="error" role="alert" hidden></p>
     </main>
