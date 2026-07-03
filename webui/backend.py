@@ -6,17 +6,28 @@ import json
 import os
 import socket
 import subprocess
+import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+MODULE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(MODULE_DIR.parent))
+from generate_snat_config import load_config, render, render_toml
 
 
 BOOT_TIME = time.time() - time.monotonic()
 STATIC_DIR = Path(os.environ.get("NIX_ROUTER_WEBUI_STATIC", Path(__file__).with_name("static")))
+PROJECT_DIR = MODULE_DIR.parent
+SNAT_CONFIG = Path(os.environ.get("NIX_ROUTER_SNAT_CONFIG", PROJECT_DIR / "general_config.toml"))
+SNAT_OUTPUT = Path(os.environ.get("NIX_ROUTER_SNAT_OUTPUT", PROJECT_DIR / "snat-config.nix"))
+SNAT_LOCK = threading.Lock()
 
 app = FastAPI(
     title="NixOS Router Web UI",
@@ -24,6 +35,19 @@ app = FastAPI(
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
+
+
+class PortForward(BaseModel):
+    protocol: str = "tcp"
+    external_port: int
+    target_host: str
+    target_port: int
+
+
+class SnatSettings(BaseModel):
+    external_interface: str
+    masquerade: bool = True
+    ports: list[PortForward]
 
 
 @app.middleware("http")
@@ -171,6 +195,58 @@ def bgp_status() -> dict[str, Any]:
             for address, peer in peers.items()
             if isinstance(peer, dict)
         ],
+    }
+
+
+def snat_payload() -> dict[str, Any]:
+    interface, masquerade, ports = load_config(SNAT_CONFIG)
+    return {
+        "external_interface": interface,
+        "masquerade": masquerade,
+        "ports": ports,
+    }
+
+
+@app.get("/api/ports", tags=["configuration"])
+def get_ports() -> dict[str, Any]:
+    try:
+        return snat_payload()
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+
+
+@app.put("/api/ports", tags=["configuration"])
+def put_ports(settings: SnatSettings) -> dict[str, Any]:
+    raw_ports = [port.model_dump() for port in settings.ports]
+    temporary_config = SNAT_CONFIG.with_suffix(SNAT_CONFIG.suffix + ".tmp")
+    temporary_output = SNAT_OUTPUT.with_suffix(SNAT_OUTPUT.suffix + ".tmp")
+
+    with SNAT_LOCK:
+        try:
+            temporary_config.write_text(
+                render_toml(
+                    settings.external_interface,
+                    settings.masquerade,
+                    raw_ports,
+                ),
+                encoding="utf-8",
+            )
+            interface, masquerade, ports = load_config(temporary_config)
+            temporary_output.write_text(
+                render(interface, masquerade, ports),
+                encoding="utf-8",
+            )
+            os.replace(temporary_config, SNAT_CONFIG)
+            os.replace(temporary_output, SNAT_OUTPUT)
+        except (OSError, ValueError) as error:
+            temporary_config.unlink(missing_ok=True)
+            temporary_output.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    return {
+        "status": "saved",
+        "rebuildRequired": True,
+        "ports": ports,
     }
 
 

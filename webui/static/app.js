@@ -1,4 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
+let portsLoaded = false;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -185,8 +186,71 @@ function renderBgp(bgp) {
     : "<p class=\"empty\">BGPピアが設定されていません。</p>";
 }
 
+function portRule(rule = {}) {
+  const protocol = rule.protocol || "tcp";
+  return `
+    <article class="port-rule">
+      <label>
+        <span>Protocol</span>
+        <select data-field="protocol">
+          <option value="tcp"${protocol === "tcp" ? " selected" : ""}>TCP</option>
+          <option value="udp"${protocol === "udp" ? " selected" : ""}>UDP</option>
+        </select>
+      </label>
+      <label>
+        <span>公開ポート</span>
+        <input data-field="external_port" type="number" min="1" max="65535" required value="${escapeHtml(rule.external_port ?? "")}">
+      </label>
+      <label class="target-host">
+        <span>転送先IPv4</span>
+        <input data-field="target_host" required placeholder="192.168.0.100" value="${escapeHtml(rule.target_host ?? "")}">
+      </label>
+      <label>
+        <span>転送先ポート</span>
+        <input data-field="target_port" type="number" min="1" max="65535" required value="${escapeHtml(rule.target_port ?? "")}">
+      </label>
+      <button class="icon-button delete-port" type="button" aria-label="このルールを削除">削除</button>
+    </article>`;
+}
+
+function errorMessage(error) {
+  if (typeof error?.detail === "string") return error.detail;
+  if (Array.isArray(error?.detail)) {
+    return error.detail.map((item) => item.msg).join(" / ");
+  }
+  return "設定を処理できませんでした。";
+}
+
+async function loadPorts() {
+  $("#ports-message").textContent = "設定を読み込んでいます…";
+  try {
+    const response = await fetch("/api/ports", { cache: "no-store" });
+    const body = await response.json();
+    if (!response.ok) throw body;
+    $("#external-interface").value = body.external_interface;
+    $("#masquerade").checked = body.masquerade;
+    $("#port-rules").innerHTML = body.ports.map(portRule).join("");
+    $("#ports-message").textContent = `${body.ports.length}件のルール`;
+    portsLoaded = true;
+  } catch (error) {
+    $("#ports-message").textContent = `読込失敗: ${errorMessage(error)}`;
+  }
+}
+
+function collectPorts() {
+  return [...document.querySelectorAll(".port-rule")].map((rule) => ({
+    protocol: rule.querySelector("[data-field=protocol]").value,
+    external_port: Number(rule.querySelector("[data-field=external_port]").value),
+    target_host: rule.querySelector("[data-field=target_host]").value.trim(),
+    target_port: Number(rule.querySelector("[data-field=target_port]").value),
+  }));
+}
+
 function route() {
-  const name = location.hash === "#/bgp" ? "bgp" : "overview";
+  const requested = location.hash.slice(2);
+  const name = ["overview", "bgp", "ports"].includes(requested)
+    ? requested
+    : "overview";
   document.querySelectorAll(".view").forEach((view) => {
     view.hidden = view.id !== `view-${name}`;
   });
@@ -199,6 +263,7 @@ function route() {
       tab.removeAttribute("aria-current");
     }
   });
+  if (name === "ports" && !portsLoaded) loadPorts();
 }
 
 async function refresh() {
@@ -239,6 +304,38 @@ document.querySelectorAll("[data-route]").forEach((tab) => {
       location.hash = hash;
     }
   });
+});
+$("#add-port").addEventListener("click", () => {
+  $("#port-rules").insertAdjacentHTML("beforeend", portRule());
+});
+$("#port-rules").addEventListener("click", (event) => {
+  const button = event.target.closest(".delete-port");
+  if (button) button.closest(".port-rule").remove();
+});
+$("#ports-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#save-ports");
+  button.disabled = true;
+  $("#ports-message").textContent = "保存しています…";
+  try {
+    const response = await fetch("/api/ports", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        external_interface: $("#external-interface").value.trim(),
+        masquerade: $("#masquerade").checked,
+        ports: collectPorts(),
+      }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw body;
+    $("#ports-message").textContent =
+      `${body.ports.length}件を保存しました。手動でrebuildしてください。`;
+  } catch (error) {
+    $("#ports-message").textContent = `保存失敗: ${errorMessage(error)}`;
+  } finally {
+    button.disabled = false;
+  }
 });
 window.addEventListener("hashchange", route);
 route();

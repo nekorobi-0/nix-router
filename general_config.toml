@@ -1,0 +1,27 @@
+[snat]
+external_interface = "ip6tnl1"
+masquerade = true
+
+[[snat.ports]]
+protocol = "tcp"
+external_port = 25568
+target_host = "192.168.0.105"
+target_port = 25565
+
+[[snat.ports]]
+protocol = "tcp"
+external_port = 25566
+target_host = "192.168.0.103"
+target_port = 25565
+
+[[snat.ports]]
+protocol = "tcp"
+external_port = 25567
+target_host = "192.168.0.110"
+target_port = 25565
+
+[[snat.ports]]
+protocol = "tcp"
+external_port = 80
+target_host = "192.168.0.101"
+target_port = 8352

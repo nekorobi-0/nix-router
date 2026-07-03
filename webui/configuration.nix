@@ -9,5 +9,6 @@
     enable = true;
     address = "172.16.1.1";
     port = 8080;
+    configDirectory = "/root/nix-router";
   };
 }
