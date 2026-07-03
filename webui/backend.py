@@ -81,7 +81,7 @@ def interface_status() -> list[dict[str, Any]]:
 
 def bgp_status() -> dict[str, Any]:
     data = run_json(["vtysh", "-c", "show bgp ipv4 unicast summary json"])
-    family = data.get("ipv4Unicast", {}) if isinstance(data, dict) else {}
+    family = data.get("ipv4Unicast", data) if isinstance(data, dict) else {}
     peers = family.get("peers", {}) if isinstance(family, dict) else {}
 
     if not isinstance(peers, dict):

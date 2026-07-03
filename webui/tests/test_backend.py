@@ -37,18 +37,16 @@ def test_bgp_status(monkeypatch) -> None:
     monkeypatch.setattr(
         "backend.run_json",
         lambda command: {
-            "ipv4Unicast": {
-                "routerId": "192.168.100.1",
-                "as": 65000,
-                "peers": {
-                    "192.168.100.2": {
-                        "remoteAs": 65100,
-                        "state": "Established",
-                        "peerUptime": "01:02:03",
-                        "pfxRcd": 12,
-                    }
+            "routerId": "192.168.100.1",
+            "as": 65000,
+            "peers": {
+                "192.168.100.2": {
+                    "remoteAs": 65100,
+                    "state": "Established",
+                    "peerUptime": "01:02:03",
+                    "pfxRcd": 12,
                 },
-            }
+            },
         },
     )
 
