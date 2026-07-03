@@ -139,7 +139,11 @@ function route() {
   document.querySelectorAll("[data-route]").forEach((tab) => {
     const active = tab.dataset.route === name;
     tab.classList.toggle("active", active);
-    tab.setAttribute("aria-current", active ? "page" : "false");
+    if (active) {
+      tab.setAttribute("aria-current", "page");
+    } else {
+      tab.removeAttribute("aria-current");
+    }
   });
 }
 
@@ -171,6 +175,17 @@ async function refresh() {
   }
 }
 
+document.querySelectorAll("[data-route]").forEach((tab) => {
+  tab.addEventListener("click", (event) => {
+    event.preventDefault();
+    const hash = `#/${tab.dataset.route}`;
+    if (location.hash === hash) {
+      route();
+    } else {
+      location.hash = hash;
+    }
+  });
+});
 window.addEventListener("hashchange", route);
 route();
 refresh();

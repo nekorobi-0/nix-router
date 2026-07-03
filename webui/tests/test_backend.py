@@ -30,7 +30,9 @@ def test_frontend() -> None:
 
     assert response.status_code == 200
     assert "Nix Router" in response.text
+    assert 'href="#/bgp"' in response.text
     assert 'id="refresh"' not in response.text
+    assert response.headers["cache-control"] == "no-store"
 
 
 def test_bgp_status(monkeypatch) -> None:

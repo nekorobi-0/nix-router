@@ -41,24 +41,36 @@ h2 { font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; }
 h3 { margin: 0; }
 
 .tabs {
+  width: fit-content;
   display: flex;
-  gap: .35rem;
+  gap: .25rem;
   margin-top: 2rem;
-  border-bottom: 1px solid #20332c;
+  border: 1px solid #29443a;
+  border-radius: 12px;
+  padding: .3rem;
+  background: #0a1511;
 }
 
 .tabs a {
-  margin-bottom: -1px;
-  border-bottom: 2px solid transparent;
-  padding: .8rem 1rem;
-  color: #70837b;
+  min-width: 7rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: .65rem 1rem;
+  color: #91a49c;
   font-size: .85rem;
   font-weight: 700;
+  text-align: center;
   text-decoration: none;
+  transition: color .15s ease, background .15s ease, border-color .15s ease;
 }
 
-.tabs a:hover { color: #edf4f0; }
-.tabs a.active { border-color: #69e2a9; color: #69e2a9; }
+.tabs a:hover { border-color: #345248; color: #edf4f0; background: #11231c; }
+.tabs a.active {
+  border-color: #258b61;
+  color: #08110e;
+  background: #69e2a9;
+  box-shadow: 0 4px 18px rgba(37, 139, 97, .22);
+}
 
 .badge, .state {
   border: 1px solid #345248;
