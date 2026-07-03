@@ -1,10 +1,1 @@
-
-#!/usr/bin/env bash
-set -e
-nix build path:.#nixosConfigurations.router.config.system.build.isoImage
-
-mkdir -p artifacts
-
-cp -r -L --remove-destination result artifacts 
-
-echo "ISO copied to artifacts/router.iso"
+export NIXPKGS_ALLOW_UNFREE=1&&nixos-rebuild switch --flake .#router --impure

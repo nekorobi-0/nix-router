@@ -1,2 +1,2 @@
-xpass.env
 artifacts/*
+xpass-env.nix
