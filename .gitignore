@@ -1,5 +1,6 @@
 artifacts/*
 xpass-env.nix
+general_config.toml
 __pycache__/
 *.pyc
 .venv/
