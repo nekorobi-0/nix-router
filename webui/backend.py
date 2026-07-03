@@ -43,7 +43,7 @@ def run_json(command: list[str]) -> Any:
             check=True,
             capture_output=True,
             text=True,
-            timeout=2,
+            timeout=5,
         )
         return json.loads(result.stdout)
     except (FileNotFoundError, subprocess.SubprocessError, json.JSONDecodeError):
@@ -76,6 +76,59 @@ def interface_status() -> list[dict[str, Any]]:
         }
         for link in links
     ]
+
+
+def bgp_routes(peer_address: str, direction: str) -> list[dict[str, Any]]:
+    data = run_json(
+        [
+            "vtysh",
+            "-c",
+            f"show bgp ipv4 unicast neighbors {peer_address} {direction} json",
+        ]
+    )
+    if not isinstance(data, dict):
+        return []
+
+    route_map: Any = {}
+    for key in ("routes", "receivedRoutes", "advertisedRoutes"):
+        if isinstance(data.get(key), dict):
+            route_map = data[key]
+            break
+
+    routes = []
+    for prefix, paths in route_map.items():
+        for path in paths if isinstance(paths, list) else [paths]:
+            if not isinstance(path, dict):
+                continue
+            nexthops = path.get("nexthops", [])
+            next_hop_values = [
+                nexthop.get("ip") or nexthop.get("hostname")
+                for nexthop in nexthops
+                if isinstance(nexthop, dict)
+            ]
+            if not next_hop_values and path.get("nextHop"):
+                next_hop_values = [path["nextHop"]]
+            bestpath = path.get("bestpath", False)
+            if isinstance(bestpath, dict):
+                bestpath = bestpath.get("overall", False)
+            aspath = path.get("path")
+            if aspath is None and isinstance(path.get("aspath"), dict):
+                aspath = path["aspath"].get("string")
+
+            routes.append(
+                {
+                    "prefix": prefix,
+                    "asPath": aspath,
+                    "nextHops": next_hop_values,
+                    "metric": path.get("metric"),
+                    "localPreference": path.get("locPrf", path.get("localPref")),
+                    "weight": path.get("weight"),
+                    "origin": path.get("origin"),
+                    "valid": path.get("valid"),
+                    "bestPath": bool(bestpath),
+                }
+            )
+    return routes
 
 
 def bgp_status() -> dict[str, Any]:
@@ -112,6 +165,8 @@ def bgp_status() -> dict[str, Any]:
                 "prefixesSent": peer.get("pfxSnt"),
                 "connectionsEstablished": peer.get("connectionsEstablished"),
                 "connectionsDropped": peer.get("connectionsDropped"),
+                "receivedRoutes": bgp_routes(address, "routes"),
+                "advertisedRoutes": bgp_routes(address, "advertised-routes"),
             }
             for address, peer in peers.items()
             if isinstance(peer, dict)

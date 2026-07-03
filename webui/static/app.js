@@ -67,8 +67,48 @@ function detailRow(label, value) {
   return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value ?? "—")}</dd></div>`;
 }
 
+function bgpRouteTable(routes, emptyMessage) {
+  if (!routes.length) return `<p class="empty route-empty">${escapeHtml(emptyMessage)}</p>`;
+
+  return `
+    <div class="route-table-wrap">
+      <table class="route-table">
+        <thead>
+          <tr>
+            <th>Prefix</th>
+            <th>AS Path</th>
+            <th>Next Hop</th>
+            <th>MED</th>
+            <th>Local Pref</th>
+            <th>Weight</th>
+            <th>Origin</th>
+            <th>Flags</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${routes.map((route) => `
+            <tr>
+              <td><code>${escapeHtml(route.prefix)}</code></td>
+              <td>${escapeHtml(route.asPath || "—")}</td>
+              <td>${escapeHtml(route.nextHops?.join(", ") || "—")}</td>
+              <td>${escapeHtml(route.metric ?? "—")}</td>
+              <td>${escapeHtml(route.localPreference ?? "—")}</td>
+              <td>${escapeHtml(route.weight ?? "—")}</td>
+              <td>${escapeHtml(route.origin || "—")}</td>
+              <td>
+                ${route.bestPath ? '<span class="route-flag best">BEST</span>' : ""}
+                ${route.valid ? '<span class="route-flag">VALID</span>' : ""}
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
 function bgpPeerDetails(peer) {
   const established = peer.state === "Established";
+  const receivedRoutes = peer.receivedRoutes || [];
+  const advertisedRoutes = peer.advertisedRoutes || [];
   return `
     <article class="peer-detail">
       <div class="interface-heading">
@@ -98,6 +138,20 @@ function bgpPeerDetails(peer) {
           ${detailRow("CONNECTIONS", peer.connectionsEstablished)}
           ${detailRow("DROPPED", peer.connectionsDropped)}
         </dl>
+      </div>
+      <div class="route-section">
+        <div class="section-title">
+          <h4>Received routes</h4>
+          <span class="muted">${escapeHtml(receivedRoutes.length)} prefixes</span>
+        </div>
+        ${bgpRouteTable(receivedRoutes, "このピアから採用している経路はありません。")}
+      </div>
+      <div class="route-section">
+        <div class="section-title">
+          <h4>Advertised routes</h4>
+          <span class="muted">${escapeHtml(advertisedRoutes.length)} prefixes</span>
+        </div>
+        ${bgpRouteTable(advertisedRoutes, "このピアへ広告している経路はありません。")}
       </div>
     </article>`;
 }
@@ -171,7 +225,7 @@ async function refresh() {
     $("#error").textContent = `ステータスを取得できません: ${error.message}`;
     $("#error").hidden = false;
   } finally {
-    window.setTimeout(refresh, 500);
+    window.setTimeout(refresh, 5000);
   }
 }
 

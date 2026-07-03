@@ -39,6 +39,7 @@ header, .section-title, .interface-heading {
 h1 { margin: .25rem 0 0; font-size: clamp(2rem, 6vw, 4rem); }
 h2 { font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; }
 h3 { margin: 0; }
+h4 { margin: 0; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
 
 .tabs {
   width: fit-content;
@@ -126,6 +127,40 @@ h3 { margin: 0; }
 .peer-detail .eyebrow { margin: 0 0 .35rem; }
 .detail-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
 .detail-columns dl { margin-bottom: 0; }
+.route-section { margin-top: 1.5rem; }
+.route-table-wrap {
+  margin-top: .75rem;
+  overflow-x: auto;
+  border: 1px solid #20332c;
+  border-radius: 10px;
+}
+.route-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+  font: .78rem ui-monospace, monospace;
+}
+.route-table th {
+  padding: .7rem .8rem;
+  color: #75d3aa;
+  background: #0a1511;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-align: left;
+}
+.route-table td { padding: .7rem .8rem; border-top: 1px solid #20332c; color: #a9b9b2; }
+.route-table tbody tr:hover { background: rgba(105, 226, 169, .035); }
+.route-flag {
+  display: inline-block;
+  margin-right: .25rem;
+  border: 1px solid #345248;
+  border-radius: 4px;
+  padding: .15rem .3rem;
+  color: #91a49c;
+  font-size: .62rem;
+}
+.route-flag.best { border-color: #258b61; color: #69e2a9; }
+.route-empty { padding: 1rem; border: 1px dashed #20332c; border-radius: 10px; }
 
 dl { margin: 1.25rem 0; }
 dl div { display: flex; justify-content: space-between; padding: .3rem 0; }

@@ -53,6 +53,20 @@ def test_bgp_status(monkeypatch) -> None:
                 "msgSent": 21,
                 },
             },
+        }
+        if command[-1] == "show bgp ipv4 unicast summary json"
+        else {
+            "routes": {
+                "203.0.113.0/24": [
+                    {
+                        "path": "65100 65200",
+                        "nexthops": [{"ip": "192.168.100.2"}],
+                        "locPrf": 100,
+                        "bestpath": {"overall": True},
+                        "valid": True,
+                    }
+                ]
+            }
         },
     )
 
@@ -64,3 +78,5 @@ def test_bgp_status(monkeypatch) -> None:
     assert result["peers"][0]["prefixesReceived"] == 12
     assert result["peers"][0]["prefixesSent"] == 8
     assert result["peers"][0]["messagesSent"] == 21
+    assert result["peers"][0]["receivedRoutes"][0]["prefix"] == "203.0.113.0/24"
+    assert result["peers"][0]["receivedRoutes"][0]["asPath"] == "65100 65200"
