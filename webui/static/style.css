@@ -64,18 +64,6 @@ h3 { margin: 0; }
 .summary article { padding: 1.4rem; background: #0d1915; }
 .summary strong { display: block; margin-top: .6rem; font: 600 1.1rem ui-monospace, monospace; }
 
-button {
-  border: 1px solid #345248;
-  border-radius: 8px;
-  padding: .55rem 1rem;
-  color: inherit;
-  background: #11231c;
-  cursor: pointer;
-}
-
-button:hover { border-color: #69e2a9; }
-button:disabled { opacity: .55; cursor: wait; }
-
 .interfaces {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -97,6 +85,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 li { display: flex; flex-direction: column; gap: .25rem; padding: .65rem 0; border-top: 1px solid #20332c; }
 code { overflow-wrap: anywhere; color: #e6f5ee; }
 small, .empty { color: #70837b; }
+.muted { color: #70837b; font: .8rem ui-monospace, monospace; }
+.bgp-section { margin-top: 2.5rem; }
 .error { color: #ff9f9f; }
 
 @media (max-width: 650px) {

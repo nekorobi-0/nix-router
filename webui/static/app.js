@@ -43,9 +43,37 @@ function interfaceCard(networkInterface) {
     </article>`;
 }
 
+function bgpPeerCard(peer) {
+  const established = peer.state === "Established";
+  return `
+    <article class="interface-card">
+      <div class="interface-heading">
+        <h3>${escapeHtml(peer.address)}</h3>
+        <span class="state ${established ? "up" : "down"}">${escapeHtml(peer.state)}</span>
+      </div>
+      <dl>
+        <div><dt>REMOTE AS</dt><dd>${escapeHtml(peer.remoteAs ?? "—")}</dd></div>
+        <div><dt>UPTIME</dt><dd>${escapeHtml(peer.uptime || "—")}</dd></div>
+        <div><dt>RECEIVED PREFIXES</dt><dd>${escapeHtml(peer.prefixesReceived ?? "—")}</dd></div>
+      </dl>
+    </article>`;
+}
+
+function renderBgp(bgp) {
+  if (!bgp?.available) {
+    $("#bgp-summary").textContent = "取得不可";
+    $("#bgp").innerHTML = "<p class=\"empty\">FRRからBGPステータスを取得できません。</p>";
+    return;
+  }
+
+  $("#bgp-summary").textContent =
+    `Router ID ${bgp.routerId || "—"} · AS${bgp.localAs ?? "—"} · ${bgp.peers.length} peer`;
+  $("#bgp").innerHTML = bgp.peers.length
+    ? bgp.peers.map(bgpPeerCard).join("")
+    : "<p class=\"empty\">BGPピアが設定されていません。</p>";
+}
+
 async function refresh() {
-  const button = $("#refresh");
-  button.disabled = true;
   $("#error").hidden = true;
 
   try {
@@ -60,6 +88,7 @@ async function refresh() {
       .join(" / ");
     $("#updated").textContent = new Date(status.timestamp * 1000).toLocaleTimeString();
     $("#interfaces").innerHTML = status.interfaces.map(interfaceCard).join("");
+    renderBgp(status.bgp);
     $("#health").textContent = "ONLINE";
     $("#health").className = "badge online";
   } catch (error) {
@@ -68,10 +97,8 @@ async function refresh() {
     $("#error").textContent = `ステータスを取得できません: ${error.message}`;
     $("#error").hidden = false;
   } finally {
-    button.disabled = false;
+    window.setTimeout(refresh, 500);
   }
 }
 
-$("#refresh").addEventListener("click", refresh);
 refresh();
-setInterval(refresh, 30000);

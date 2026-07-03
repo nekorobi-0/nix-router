@@ -79,6 +79,32 @@ def interface_status() -> list[dict[str, Any]]:
     ]
 
 
+def bgp_status() -> dict[str, Any]:
+    data = run_json(["vtysh", "-c", "show bgp ipv4 unicast summary json"])
+    family = data.get("ipv4Unicast", {}) if isinstance(data, dict) else {}
+    peers = family.get("peers", {}) if isinstance(family, dict) else {}
+
+    if not isinstance(peers, dict):
+        peers = {}
+
+    return {
+        "available": bool(family),
+        "routerId": family.get("routerId"),
+        "localAs": family.get("as"),
+        "peers": [
+            {
+                "address": address,
+                "remoteAs": peer.get("remoteAs"),
+                "state": peer.get("state", "Unknown"),
+                "uptime": peer.get("peerUptime"),
+                "prefixesReceived": peer.get("pfxRcd"),
+            }
+            for address, peer in peers.items()
+            if isinstance(peer, dict)
+        ],
+    }
+
+
 @app.get("/api/health", tags=["system"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -98,6 +124,7 @@ def status() -> JSONResponse:
             "uptimeSeconds": max(0, int(time.time() - BOOT_TIME)),
             "loadAverage": load,
             "interfaces": interface_status(),
+            "bgp": bgp_status(),
         }
     )
 

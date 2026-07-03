@@ -50,7 +50,7 @@ in
       description = "NixOS Router Web UI";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
-      path = [ pkgs.iproute2 pkgs.systemd ];
+      path = [ pkgs.iproute2 pkgs.systemd pkgs.frr ];
 
       environment = {
         PYTHONUNBUFFERED = "1";
@@ -60,6 +60,7 @@ in
       serviceConfig = {
         Type = "simple";
         DynamicUser = true;
+        SupplementaryGroups = [ "frrvty" ];
         ExecStart = "${python}/bin/uvicorn backend:app --app-dir ${app}/share/nix-router-webui --host ${cfg.address} --port ${toString cfg.port}";
         Restart = "on-failure";
         RestartSec = "2s";
