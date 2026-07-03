@@ -50,11 +50,11 @@ in
       description = "NixOS Router Web UI";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
+      path = [ pkgs.iproute2 pkgs.systemd ];
 
       environment = {
         PYTHONUNBUFFERED = "1";
         NIX_ROUTER_WEBUI_STATIC = "${app}/share/nix-router-webui/static";
-        PATH = lib.makeBinPath [ pkgs.iproute2 pkgs.systemd ];
       };
 
       serviceConfig = {

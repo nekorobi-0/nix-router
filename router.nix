@@ -121,7 +121,7 @@ in
       matchConfig.Name = "ip6tnl1";
       address = [ xpass.xpassIPv4Fixed ];
       routes = [
-        { routeConfig.Destination = "0.0.0.0/0"; }
+        { Destination = "0.0.0.0/0"; }
       ];
     };
   };
