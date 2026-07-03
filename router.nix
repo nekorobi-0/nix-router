@@ -10,6 +10,9 @@ in
 {
   imports = [
     ./hardware-configuration.nix
+    ./snat-config.nix
+    ./ssh-config.nix
+    ./webui/configuration.nix
   ];
   # ── boot ────────────────────────────────────────────────────────────
   boot.loader.systemd-boot.enable = true;
@@ -41,42 +44,10 @@ in
     useDHCP = false;
     nftables ={
       enable = true;
-      tables.nat = {
-        family = "ip";
-        content = ''
-          chain postrouting {
-            type nat hook postrouting priority srcnat;
-            oifname "ip6tnl1" masquerade
-          }
-          chain prerouting {
-            type nat hook prerouting priority dstnat;
-            iifname "ip6tnl1" tcp dport 25568 dnat to 192.168.0.105:25565
-            iifname "ip6tnl1" tcp dport 25566 dnat to 192.168.0.103:25565
-            iifname "ip6tnl1" tcp dport 25567 dnat to 192.168.0.110:25565
-            iifname "ip6tnl1" tcp dport 80 dnat to 192.168.0.101:8352
-          }
-        '';
-      };
-      tables.filter = {
-        family = "ip";
-        content = ''
-          chain forward {
-            type filter hook forward priority filter;
-            iifname "ip6tnl1" oifname "eth0" tcp dport 25565 ct state new accept
-            ct state established,related accept
-          }
-        '';
-      };
     };
     firewall = {
       enable = true;
       trustedInterfaces = [ "enp2s0" "enp3s0" ];
-      allowedTCPPorts = [
-        25566 25567 25568 80
-      ];
-
-        allowedUDPPorts = [
-      ];
     };
     enableIPv6 = true;
     networkmanager.enable = lib.mkForce false;
@@ -215,22 +186,7 @@ in
   services.prometheus.exporters.node = {
       enable = true;
       port = 9100;
-      openFirewall = true;
   };
-  # ── SSH ──────────────────────────────────────────────────────────────
-  services.openssh = {
-    enable = true;
-    settings = {
-      PermitRootLogin        = "yes";
-      PasswordAuthentication = false;
-    };
-  };
-
-  # ── SSH authorized keys ───────────────────────────────────────────────
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC3F4EyORHK0dc+1o/fbY8T3t9XnsFO5DJ0b7T5DWo2p8RpYAEURtzg2N4kcwlD20n68FAmj3YfQXJhSg4dl5SbTB3VgYn8EWawFIp2p5o2o/wI8e8tIYFKzetkjFRb37tvJsHNdhIfrDYcOxUE9j8IcZSBYv8rmdjCKLzXRfLNt7QSz3WbRw5cS1PAN7MfUf/ygUxi/9qEzMW4sRBFcDfr9AelrUpglMnCO7OWk9oLZ0GxkwYcDmm3UX9UfIrlhbks2P7sxjTFE/jvGd6zKpPgcnsZW5EBogXbGlgVViRdB+QgIGm0XJ9zohG/Kz1kkw5jxTu9i4cTs14TMILQ3QL5M9J0jiEhX/etxJCpszyhkk0b7a1+IsCkCmqZtWW+ZmaV9wA8lQXdyJrNwum9vRtkDxUIhP3akV/zgCMzOfW3vaMo00uvivy8IY73sWkAVeaToRd9ao7Y4O0WgRaJPHupFogI45nGT9F/ir6BIjfwBY2tmN1CcAC9EHcKWwuWpeHCazS+MdvLeG2H2+fi0JqthqDHyg1sVALSNYne44yEGpHtCl4J+XLtfqamFM1hGi/GwiPv5K0at1tG3jgFCGVhgoz9CMTATqYeFfPR/gfX2EJ9PsMylxSBNW0Z8/e8Hu67xzyZ29nxNx2caFc20UbJXCwcU8zHn+499igq0YML/w== user@DESKTOP"
-  ];
-
   # ── packages ─────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     nano vim git curl wget htop btop tmux prometheus

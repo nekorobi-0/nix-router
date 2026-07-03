@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Nix Router</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">NixOS ROUTER</p>
+          <h1 id="hostname">接続中…</h1>
+        </div>
+        <div id="health" class="badge pending">確認中</div>
+      </header>
+
+      <section class="summary" aria-label="システム概要">
+        <article>
+          <span>UPTIME</span>
+          <strong id="uptime">—</strong>
+        </article>
+        <article>
+          <span>LOAD AVERAGE</span>
+          <strong id="load">—</strong>
+        </article>
+        <article>
+          <span>UPDATED</span>
+          <strong id="updated">—</strong>
+        </article>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <h2>Interfaces</h2>
+          <button id="refresh" type="button">更新</button>
+        </div>
+        <div id="interfaces" class="interfaces"></div>
+      </section>
+
+      <p id="error" class="error" role="alert" hidden></p>
+    </main>
+  </body>
+</html>

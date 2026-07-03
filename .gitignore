@@ -1,2 +1,6 @@
 artifacts/*
 xpass-env.nix
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
