@@ -5,6 +5,7 @@ let
   wan = "enp1s0";
   lan = "enp2s0";
   lan2 = "enp3s0";
+  lan3 = "enp1s0d1";
   xpass = import ./xpass-env.nix;
 in
 {
@@ -102,6 +103,19 @@ in
     networks."40-lan2" = {
       matchConfig.Name = lan2;
       address = [ "192.168.100.1/30" ];
+    };
+    networks."50-lan" = {
+      matchConfig.Name = lan3;
+      address = [ "172.16.0.1/24" ];
+      networkConfig = {
+        IPv6SendRA           = true;
+        DHCPPrefixDelegation = true;
+      };
+      dhcpPrefixDelegationConfig = {
+        UplinkInterface = wan;
+        SubnetId        = 1;
+        Announce        = true;
+      };
     };
     # ── IPIP6 トンネル構成 ───────────────────────────────────────────────
     netdevs."30-ip6tnl1" = {
