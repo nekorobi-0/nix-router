@@ -48,7 +48,7 @@ in
     };
     firewall = {
       enable = true;
-      trustedInterfaces = [ "enp2s0" "enp3s0" ];
+      trustedInterfaces = [ "enp2s0" "enp3s0" "enp1s0d1" ];
     };
     enableIPv6 = true;
     networkmanager.enable = lib.mkForce false;
@@ -113,7 +113,7 @@ in
       };
       dhcpPrefixDelegationConfig = {
         UplinkInterface = wan;
-        SubnetId        = 1;
+        SubnetId        = 2;
         Announce        = true;
       };
     };
