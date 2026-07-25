@@ -89,7 +89,7 @@ in
 
     networks."20-lan" = {
       matchConfig.Name = lan;
-      address = [ "172.16.1.1/24" ];
+      address = [ "10.0.1.1/24" ];
       networkConfig = {
         IPv6SendRA           = true;
         DHCPPrefixDelegation = true;
@@ -144,12 +144,12 @@ in
     enable = true;
 
     settings = {
-      interface = "${lan}";
+      interface = "${lan3}";
       no-dhcp-interface="${wan}";
       domain-needed = true;
-      dhcp-range = "172.16.1.11,172.16.1.99,12h";
+      dhcp-range = "172.16.0.11,172.16.0.99,12h";
       dhcp-option = [
-        "option:router,172.16.1.1"
+        "option:router,172.16.0.1"
         "option:dns-server,8.8.8.8"
       ];
       port = 0;
