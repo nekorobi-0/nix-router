@@ -172,6 +172,9 @@ in
         neighbor 10.0.1.103 remote-as 65203
         address-family ipv4 unicast
           neighbor 192.168.100.2 activate
+          neighbor 10.0.1.100 activate
+          neighbor 10.0.1.101 activate
+          neighbor 10.0.1.103 activate
           neighbor 10.0.1.100 attribute-unchanged next-hop
           neighbor 10.0.1.101 attribute-unchanged next-hop
           neighbor 10.0.1.103 attribute-unchanged next-hop
