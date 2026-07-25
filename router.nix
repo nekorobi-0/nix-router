@@ -165,18 +165,18 @@ in
         bgp router-id 192.168.100.1
 
         neighbor 192.168.100.2 remote-as 65100
-        neighbor 192.168.100.2 route-map ALLOW in
-        neighbor 192.168.100.2 route-map ALLOW out
-        neighbor 10.0.1.100 route-map ALLOW in
-        neighbor 10.0.1.100 route-map ALLOW out
-        neighbor 10.0.1.101 route-map ALLOW in
-        neighbor 10.0.1.101 route-map ALLOW out
-        neighbor 10.0.1.103 route-map ALLOW in
-        neighbor 10.0.1.103 route-map ALLOW out
         neighbor 10.0.1.100 remote-as 65200
         neighbor 10.0.1.101 remote-as 65201
         neighbor 10.0.1.103 remote-as 65203
         address-family ipv4 unicast
+          neighbor 192.168.100.2 route-map ALLOW in
+          neighbor 192.168.100.2 route-map ALLOW out
+          neighbor 10.0.1.100 route-map ALLOW in
+          neighbor 10.0.1.100 route-map ALLOW out
+          neighbor 10.0.1.101 route-map ALLOW in
+          neighbor 10.0.1.101 route-map ALLOW out
+          neighbor 10.0.1.103 route-map ALLOW in
+          neighbor 10.0.1.103 route-map ALLOW out
           neighbor 192.168.100.2 activate
           neighbor 10.0.1.100 activate
           neighbor 10.0.1.101 activate
