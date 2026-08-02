@@ -19,6 +19,12 @@ function duration(seconds) {
     .join(" ");
 }
 
+function linkSpeed(mbps) {
+  if (typeof mbps !== "number" || mbps < 0) return "—";
+  if (mbps >= 1000) return `${(mbps / 1000).toLocaleString("ja-JP", { maximumFractionDigits: 2 })} Gbps`;
+  return `${mbps.toLocaleString("ja-JP")} Mbps`;
+}
+
 function interfaceCard(networkInterface) {
   const addresses = networkInterface.addresses.length
     ? networkInterface.addresses
@@ -39,6 +45,7 @@ function interfaceCard(networkInterface) {
       <dl>
         <div><dt>MAC</dt><dd>${escapeHtml(networkInterface.mac || "—")}</dd></div>
         <div><dt>MTU</dt><dd>${escapeHtml(networkInterface.mtu || "—")}</dd></div>
+        <div><dt>LINK SPEED</dt><dd>${escapeHtml(linkSpeed(networkInterface.linkSpeedMbps))}</dd></div>
       </dl>
       <ul>${addresses}</ul>
     </article>`;

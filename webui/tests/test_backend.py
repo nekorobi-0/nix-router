@@ -1,6 +1,15 @@
 from fastapi.testclient import TestClient
 
-from backend import PortForward, SnatSettings, app, bgp_status, get_ports, put_ports
+from backend import (
+    PortForward,
+    SnatSettings,
+    app,
+    bgp_status,
+    get_ports,
+    interface_link_speed,
+    interface_status,
+    put_ports,
+)
 
 
 client = TestClient(app)
@@ -23,6 +32,34 @@ def test_status() -> None:
     assert isinstance(body["uptimeSeconds"], int)
     assert isinstance(body["interfaces"], list)
     assert isinstance(body["bgp"]["available"], bool)
+
+
+def test_interface_link_speed(tmp_path, monkeypatch) -> None:
+    net_root = tmp_path / "net"
+    interface = net_root / "wan0"
+    interface.mkdir(parents=True)
+    (interface / "speed").write_text("2500\n", encoding="utf-8")
+    monkeypatch.setattr("backend.NETWORK_SYSFS_ROOT", net_root)
+
+    assert interface_link_speed("wan0") == 2500
+
+
+def test_interface_status_includes_link_speed(tmp_path, monkeypatch) -> None:
+    net_root = tmp_path / "net"
+    interface = net_root / "wan0"
+    interface.mkdir(parents=True)
+    (interface / "speed").write_text("1000\n", encoding="utf-8")
+    monkeypatch.setattr("backend.NETWORK_SYSFS_ROOT", net_root)
+    monkeypatch.setattr(
+        "backend.run_json",
+        lambda command: [
+            {"ifindex": 2, "ifname": "wan0", "operstate": "UP", "address": "00:00:00:00:00:01", "mtu": 1500}
+        ]
+        if command == ["ip", "-json", "link", "show"]
+        else [{"ifindex": 2, "addr_info": []}],
+    )
+
+    assert interface_status()[0]["linkSpeedMbps"] == 1000
 
 
 def test_frontend() -> None:

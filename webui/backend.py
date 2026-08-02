@@ -28,6 +28,7 @@ PROJECT_DIR = MODULE_DIR.parent
 SNAT_CONFIG = Path(os.environ.get("NIX_ROUTER_SNAT_CONFIG", PROJECT_DIR / "general_config.toml"))
 SNAT_OUTPUT = Path(os.environ.get("NIX_ROUTER_SNAT_OUTPUT", PROJECT_DIR / "snat-config.nix"))
 SNAT_LOCK = threading.Lock()
+NETWORK_SYSFS_ROOT = Path(os.environ.get("NIX_ROUTER_SYS_CLASS_NET", "/sys/class/net"))
 
 app = FastAPI(
     title="NixOS Router Web UI",
@@ -74,6 +75,18 @@ def run_json(command: list[str]) -> Any:
         return []
 
 
+def interface_link_speed(ifname: str | None) -> int | None:
+    """Return a physical interface's negotiated link speed in Mbps, if known."""
+    if not ifname:
+        return None
+
+    try:
+        speed = int((NETWORK_SYSFS_ROOT / ifname / "speed").read_text().strip())
+    except (OSError, ValueError):
+        return None
+    return speed if speed >= 0 else None
+
+
 def interface_status() -> list[dict[str, Any]]:
     links = run_json(["ip", "-json", "link", "show"])
     addresses = run_json(["ip", "-json", "address", "show"])
@@ -96,6 +109,7 @@ def interface_status() -> list[dict[str, Any]]:
             "state": link.get("operstate", "UNKNOWN"),
             "mac": link.get("address"),
             "mtu": link.get("mtu"),
+            "linkSpeedMbps": interface_link_speed(link.get("ifname")),
             "addresses": addresses_by_index.get(link.get("ifindex"), []),
         }
         for link in links
