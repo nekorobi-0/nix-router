@@ -166,6 +166,7 @@ in
 
         neighbor 192.168.100.2 remote-as 65100
         neighbor 172.16.0.2 remote-as 65110
+        neighbor 172.16.0.2 dont-capability-negotiate
         neighbor 10.0.1.100 remote-as 65200
         neighbor 10.0.1.101 remote-as 65201
         neighbor 10.0.1.103 remote-as 65203
