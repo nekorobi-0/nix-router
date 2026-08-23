@@ -170,9 +170,9 @@ in
         neighbor 10.0.1.100 remote-as 65200
         neighbor 10.0.1.101 remote-as 65201
         neighbor 10.0.1.103 remote-as 65203
-        neighbor 10.0.1.100 local-as 65001
-        neighbor 10.0.1.101 local-as 65001
-        neighbor 10.0.1.103 local-as 65001
+        neighbor 10.0.1.100 local-as 65001 no-prepend replace-as
+        neighbor 10.0.1.101 local-as 65001 no-prepend replace-as
+        neighbor 10.0.1.103 local-as 65001 no-prepend replace-as
         address-family ipv4 unicast
           neighbor 192.168.100.2 route-map ALLOW in
           neighbor 192.168.100.2 route-map ALLOW out
