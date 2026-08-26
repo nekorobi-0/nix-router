@@ -234,7 +234,7 @@ in
     zstd zip unzip
     jq yq-go
     docker docker-compose
-    fastfetch ookla-speedtest
+    fastfetch ookla-speedtest arp-scan
   ];
 
   # ── misc ─────────────────────────────────────────────────────────────
