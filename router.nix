@@ -163,8 +163,8 @@ in
       route-map ALLOW permit 10
       router bgp 65000
         bgp router-id 192.168.100.1
-
         neighbor 192.168.100.2 remote-as 65100
+        neighbor 172.16.0.3 remote-as 65010
         neighbor 172.16.0.2 remote-as 65110
         neighbor 172.16.0.2 dont-capability-negotiate
         neighbor 10.0.1.100 remote-as 65200
@@ -178,6 +178,8 @@ in
           neighbor 192.168.100.2 route-map ALLOW out
           neighbor 172.16.0.2 route-map ALLOW in
           neighbor 172.16.0.2 route-map ALLOW out
+          neighbor 172.16.0.3 route-map ALLOW in
+          neighbor 172.16.0.3 route-map ALLOW out
           neighbor 10.0.1.100 route-map ALLOW in
           neighbor 10.0.1.100 route-map ALLOW out
           neighbor 10.0.1.101 route-map ALLOW in
@@ -186,6 +188,7 @@ in
           neighbor 10.0.1.103 route-map ALLOW out
           neighbor 192.168.100.2 activate
           neighbor 172.16.0.2 activate
+          neighbor 172.16.0.3 activate
           neighbor 10.0.1.100 activate
           neighbor 10.0.1.101 activate
           neighbor 10.0.1.103 activate
