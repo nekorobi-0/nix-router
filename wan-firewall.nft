@@ -1,0 +1,19 @@
+# This chain runs independently of Docker and the host INPUT firewall.
+chain forward {
+  type filter hook forward priority filter - 10; policy drop;
+  ct state invalid counter drop
+  ct state { established, related } accept
+  iifname { @LAN_INTERFACES@ } accept
+  # Container initiated traffic keeps working; WAN initiated traffic is gated below.
+  iifname "docker0" accept
+  iifname "br-*" accept
+  iifname { "@WAN@", "ip6tnl1" } jump wan_inbound
+  counter drop
+}
+
+chain wan_inbound {
+  # Preserve IPv6 error reporting and Path MTU Discovery, including untracked errors.
+  icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem } accept
+  jump wan_port_forwards
+  counter drop
+}

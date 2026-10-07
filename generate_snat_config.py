@@ -87,13 +87,6 @@ def load_config(path: Path) -> tuple[str, bool, list[dict[str, Any]]]:
     return interface, masquerade, normalized
 
 
-def nix_port_list(name: str, ports: list[int]) -> list[str]:
-    lines = [f"  networking.firewall.{name} = ["]
-    lines.extend(f"    {port}" for port in ports)
-    lines.append("  ];")
-    return lines
-
-
 def render_toml(interface: str, masquerade: bool, ports: list[dict[str, Any]]) -> str:
     lines = [
         "[snat]",
@@ -115,12 +108,6 @@ def render_toml(interface: str, masquerade: bool, ports: list[dict[str, Any]]) -
 
 
 def render(interface: str, masquerade: bool, ports: list[dict[str, Any]]) -> str:
-    tcp_ports = sorted(
-        entry["external_port"] for entry in ports if entry["protocol"] == "tcp"
-    )
-    udp_ports = sorted(
-        entry["external_port"] for entry in ports if entry["protocol"] == "udp"
-    )
     quoted_interface = json.dumps(interface)
 
     lines = [
@@ -130,13 +117,6 @@ def render(interface: str, masquerade: bool, ports: list[dict[str, Any]]) -> str
         "",
         "{",
     ]
-    if tcp_ports:
-        lines.extend(nix_port_list("allowedTCPPorts", tcp_ports))
-        lines.append("")
-    if udp_ports:
-        lines.extend(nix_port_list("allowedUDPPorts", udp_ports))
-        lines.append("")
-
     lines.extend(
         [
             "  networking.nftables.tables.nat = {",
@@ -161,6 +141,20 @@ def render(interface: str, masquerade: bool, ports: list[dict[str, Any]]) -> str
             f"        iifname {quoted_interface} {entry['protocol']} "
             f"dport {entry['external_port']} dnat to "
             f"{entry['target_host']}:{entry['target_port']}"
+        )
+    lines.extend([
+        "      }", "    '';", "  };", "",
+        "  networking.nftables.tables.wan-guard = {",
+        '    family = "inet";',
+        "    content = ''",
+        "      chain wan_port_forwards {",
+    ])
+    for entry in ports:
+        lines.append(
+            f"        iifname {quoted_interface} ct status dnat "
+            f"ip daddr {entry['target_host']} {entry['protocol']} "
+            f"dport {entry['target_port']} ct original proto-dst "
+            f"{entry['external_port']} counter accept"
         )
     lines.extend(["      }", "    '';", "  };", "}", ""])
     return "\n".join(lines)

@@ -7,12 +7,14 @@ let
   lan2 = "enp3s0";
   lan3 = "enp1s0d1";
   xpass = import ./xpass-env.nix;
+  xpassLocalAddress = lib.head (lib.splitString "/" xpass.xpassIPv6Prefix);
 in
 {
   imports = [
     ./hardware-configuration.nix
     ./snat-config.nix
     ./ssh-config.nix
+    (import ./wan-security.nix { inherit wan; lanInterfaces = [ lan lan2 lan3 ]; })
     ./webui/configuration.nix
   ];
   # ── boot ────────────────────────────────────────────────────────────
@@ -48,7 +50,11 @@ in
     };
     firewall = {
       enable = true;
-      trustedInterfaces = [ "enp2s0" "enp3s0" "enp1s0d1" ];
+      trustedInterfaces = [ lan lan2 lan3 ];
+      # Only the contracted Xpass endpoint may deliver encapsulated IPv4.
+      extraInputRules = ''
+        iifname "${wan}" ip6 saddr ${xpass.xpassTunnelRemote} ip6 daddr ${xpassLocalAddress} meta l4proto 4 counter accept
+      '';
     };
     enableIPv6 = true;
     networkmanager.enable = lib.mkForce false;
@@ -125,7 +131,7 @@ in
       };
       tunnelConfig = {
         Remote       = xpass.xpassTunnelRemote;
-        Local        = xpass.xpassIPv6Prefix;
+        Local        = xpassLocalAddress;
         Mode         = "ipip6";
         EncapsulationLimit = "none";
       };
@@ -207,11 +213,16 @@ in
     serviceConfig = {
       Type             = "oneshot";
       RemainAfterExit  = false;
-      ExecStart = pkgs.writeShellScript "xpass-ddns-update" ''
-        ${pkgs.curl}/bin/curl -k \
-          "https://${xpass.xpassDDNSUser}:${xpass.xpassDDNSPassword}@${xpass.xpassDdnsDomain}/cgi-bin/ddns_api.cgi?d=${xpass.xpassFQDN}&p=${xpass.xpassDDNSPassword}&a=${xpass.xpassIPv6Prefix}&u=${xpass.xpassDDNSId}"
-      '';
+      LoadCredential = [ "xpass-ddns.json:/etc/nix-router/xpass-ddns.json" ];
+      ExecStart = "${pkgs.python3}/bin/python ${./scripts/xpass_ddns.py}";
+      DynamicUser = true;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectHome = true;
+      ProtectSystem = "strict";
+      RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" ];
     };
+    environment.SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
   };
 
   systemd.timers.xpass-ddns = {
@@ -226,10 +237,11 @@ in
   services.prometheus.exporters.node = {
       enable = true;
       port = 9100;
+      openFirewall = false;
   };
   # ── packages ─────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
-    nano vim git curl wget htop btop tmux prometheus
+    nano vim git curl wget htop btop tmux prometheus python3
     tcpdump iperf3 mtr traceroute dig bind nmap ndisc6
     iproute2 nftables ethtool bridge-utils vlan conntrack-tools frr
     pciutils usbutils lm_sensors smartmontools

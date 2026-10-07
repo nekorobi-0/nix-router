@@ -3,9 +3,12 @@
 {
   services.openssh = {
     enable = true;
+    # LAN interfaces are trusted; do not expose SSH on either WAN interface.
+    openFirewall = false;
     settings = {
       PermitRootLogin = "yes";
       PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
     };
   };
 

@@ -3,13 +3,6 @@
 { ... }:
 
 {
-  networking.firewall.allowedTCPPorts = [
-    80
-    25566
-    25567
-    25568
-  ];
-
   networking.nftables.tables.nat = {
     family = "ip";
     content = ''
@@ -24,6 +17,18 @@
         iifname "ip6tnl1" tcp dport 25566 dnat to 192.168.0.103:25565
         iifname "ip6tnl1" tcp dport 25567 dnat to 192.168.0.110:25565
         iifname "ip6tnl1" tcp dport 80 dnat to 192.168.0.101:8352
+      }
+    '';
+  };
+
+  networking.nftables.tables.wan-guard = {
+    family = "inet";
+    content = ''
+      chain wan_port_forwards {
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.105 tcp dport 25565 ct original proto-dst 25568 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.103 tcp dport 25565 ct original proto-dst 25566 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.110 tcp dport 25565 ct original proto-dst 25567 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.101 tcp dport 8352 ct original proto-dst 80 counter accept
       }
     '';
   };
