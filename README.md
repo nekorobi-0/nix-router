@@ -28,6 +28,7 @@ Xpass（IPIP6）で IPv4 over IPv6 接続を行う、実機向け NixOS
 - FRR (`bgpd`) による `192.168.100.2`（AS 65100）との BGP
 - Xpass DDNS の4分間隔更新
 - Prometheus Node Exporter（TCP 9100）
+- FRR Exporter（管理LANの `172.16.0.1:9342`、BGP・経路情報）
 - OpenSSH（root の公開鍵認証のみ）
 - Docker、ネットワーク診断・運用ツール
 - BBR と CAKE
@@ -157,6 +158,56 @@ sudo NIXPKGS_ALLOW_UNFREE=1 \
   nixos-rebuild build --flake path:.#router --impure
 ```
 
+## FRR Exporter
+
+Nixpkgs標準の `services.prometheus.exporters.frr` を使用します。
+現在の `flake.lock` では `tynany/frr_exporter` v1.10.0です。
+FRRの `/run/frr` にあるUnixソケットへ、標準モジュールのユーザー `frr`・
+グループ `frrvty` で接続します。`frr.service` の起動後にExporterを起動します。
+
+IPv4 BGPと経路のcollectorを使用し、未使用のBFD・OSPFは無効にします。
+待受は管理LANの `172.16.0.1:9342` のみです。LANは既存の
+`trustedInterfaces` で許可されているため、`openFirewall = false` でも
+LANから収集できます。WAN側へのポート開放は追加しません。
+
+外部Prometheusの設定に次を追加し、設定検証後に再読み込みしてください。
+このリポジトリではPrometheusサーバー自体は有効化しません。
+
+```yaml
+scrape_configs:
+  - job_name: frr
+    scrape_interval: 30s
+    scrape_timeout: 25s
+    static_configs:
+      - targets: ["172.16.0.1:9342"]
+```
+
+設定をビルドして適用した後、ルーター上で確認します。
+
+```bash
+systemctl status prometheus-frr-exporter.service
+sudo journalctl -u prometheus-frr-exporter.service -b --no-pager
+curl --fail --max-time 25 http://172.16.0.1:9342/metrics
+sudo vtysh -c 'show bgp summary json'
+```
+
+管理LANのPrometheusホストからも `/metrics` の到達性を確認してください。
+Prometheusで `up{job="frr"} == 1` を確認し、
+`frr_bgp_peer_state{job="frr"}` の6ピアがFRRの表示と一致することを確認します。
+状態値は `1` がEstablished、`0` がDown、`2` が管理上の停止です。
+プレフィックス数と経路数が収集でき、scrapeの時間が25秒未満であることも確認します。
+WAN側の別回線からはTCP 9342に接続できないことを確認してください。
+
+通知はまず `up{job="frr"} == 0` が2分続く場合を対象にします。
+BGPの通知対象は、常時接続を期待するピアを選んだうえで
+`frr_bgp_peer_state{job="frr", peer="対象のIP"} == 0` が2分続く条件にします。
+ピアのメトリクス欠落はこの条件では検知できないため、対象ピアの
+`absent(frr_bgp_peer_state{job="frr", peer="対象のIP"})` も別途監視します。
+
+適用後に問題があれば `sudo nixos-rebuild switch --rollback` で直前の
+generationへ戻します。これは同時に適用した他の変更も戻すため、
+Exporterだけを外す場合は追加したExporterとsystemdの設定を削除して再適用してください。
+
 ## 運用上の注意
 
 - WAN側の `enp1s0` と `ip6tnl1` からの転送は、戻り通信・必要なIPv6エラー・
@@ -164,7 +215,7 @@ sudo NIXPKGS_ALLOW_UNFREE=1 \
   標準firewallはINPUTを担当し、FORWARDは独立した `inet wan-guard` テーブルが担当します。
 - LAN間とLANから外への通信は維持します。LAN全体の信頼と、管理UIの認証は今後の分離対策の対象です。
 - rootの鍵認証SSHはLAN側から利用可能です。WAN側のTCP 22は開放しません。
-- Node ExporterのTCP 9100とWeb UIの8080はWAN側へ開放しません。
+- Node ExporterのTCP 9100、FRR Exporterの9342とWeb UIの8080はWAN側へ開放しません。
 - Dockerが独自に公開したポートもWAN側の転送制限を受けます。必要な公開は
   `general_config.toml` に指定して `python3 generate_snat_config.py` で生成してください。
   カスタム名のDockerブリッジからの新規転送は、必要に応じて `wan-firewall.nft` で明示許可してください。

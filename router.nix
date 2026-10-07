@@ -239,6 +239,19 @@ in
       port = 9100;
       openFirewall = false;
   };
+  services.prometheus.exporters.frr = {
+    enable = true;
+    listenAddress = "172.16.0.1";
+    port = 9342;
+    openFirewall = false;
+    disabledCollectors = [ "bfd" "ospf" ];
+    extraFlags = [ "--frr.socket.dir-path=/run/frr" ];
+  };
+
+  systemd.services.prometheus-frr-exporter = {
+    wants = [ "frr.service" ];
+    after = [ "frr.service" ];
+  };
   # ── packages ─────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     nano vim git curl wget htop btop tmux prometheus python3
