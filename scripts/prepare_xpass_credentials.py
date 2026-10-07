@@ -45,9 +45,14 @@ def parse_settings(source: str) -> dict[str, str]:
             raise ValueError("duplicate Xpass setting")
         # Nix's documented string escapes overlap with JSON, plus escaped interpolation.
         settings[key] = json.loads(value.replace(r"\${", "${"))
+    # Older deployments used DDNSPass for Basic auth and DDNSPassword for the API.
+    if "xpassDDNSPass" in settings:
+        legacy_password = settings.pop("xpassDDNSPass")
+        settings.setdefault("xpassDDNSPassword", legacy_password)
+        settings.setdefault("xpassBasicPassword", legacy_password)
     if any(not settings.get(key) for key in NETWORK_FIELDS):
         raise ValueError("missing Xpass network settings")
-    if set(settings) - set(NETWORK_FIELDS) - set(DDNS_FIELDS):
+    if set(settings) - set(NETWORK_FIELDS) - set(DDNS_FIELDS) - {"xpassBasicPassword"}:
         raise ValueError("unknown Xpass settings; migrate these manually")
     return settings
 
@@ -74,17 +79,29 @@ def prepare(source: Path, directory: Path) -> None:
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     directory.chmod(0o700)
     credential = directory / "xpass-ddns.json"
+    backup = directory / "xpass-env.original.nix"
     if credential.is_symlink():
         raise ValueError("credential must not be a symbolic link")
-    secret_fields = set(DDNS_FIELDS) - set(NETWORK_FIELDS)
+    secret_fields = (set(DDNS_FIELDS) - set(NETWORK_FIELDS)) | {"xpassBasicPassword"}
     if secret_fields & settings.keys():
         ddns = {key: settings.get(key) for key in DDNS_FIELDS}
+        if "xpassBasicPassword" in settings:
+            ddns["xpassBasicPassword"] = settings["xpassBasicPassword"]
         make_request(ddns)
-        backup = directory / "xpass-env.original.nix"
         if not backup.exists():
             atomic_write(backup, original, 0o600)
     else:
         ddns = json.loads(credential.read_text(encoding="utf-8"))
+        # Recover a Basic password omitted by the first migration, without replacing
+        # a manually configured value or restoring credentials for another account.
+        if "xpassBasicPassword" not in ddns and backup.is_file():
+            previous = parse_settings(backup.read_text(encoding="utf-8"))
+            if (
+                "xpassBasicPassword" in previous
+                and previous.get("xpassDDNSUser") == ddns.get("xpassDDNSUser")
+                and previous.get("xpassDDNSPassword") == ddns.get("xpassDDNSPassword")
+            ):
+                ddns["xpassBasicPassword"] = previous["xpassBasicPassword"]
         ddns["xpassIPv6Prefix"] = settings["xpassIPv6Prefix"]
         make_request(ddns)
     atomic_write(credential, json.dumps(ddns, ensure_ascii=False) + "\n", 0o600)

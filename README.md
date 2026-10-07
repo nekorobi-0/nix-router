@@ -39,7 +39,7 @@ Xpass（IPIP6）で IPv4 over IPv6 接続を行う、実機向け NixOS
 - `snat-config.nix`: Xpassトンネル向けSNATとポート転送設定
 - `wan-security.nix` / `wan-firewall.nft`: IPv4/IPv6の転送制限
 - `scripts/prepare_xpass_credentials.py`: DDNS秘密情報の移行
-- `scripts/xpass_ddns.py`: TLS検証付きDDNS更新
+- `scripts/xpass_ddns.py`: TLS検証を設定できるDDNS更新
 - `ssh-config.nix`: OpenSSHとroot公開鍵の設定
 - `hardware-configuration.nix`: 現在の実機固有ハードウェア設定
 - `build.sh`: `nixos-rebuild switch --flake .#router --impure` の実行スクリプト
@@ -87,6 +87,7 @@ Nix Flakes を利用できる x86_64 NixOS 環境が必要です。
 
   xpassDDNSUser = "ddns-user";
   xpassDDNSPassword = "ddns-password";
+  xpassBasicPassword = "basic-password"; # DDNSパスワードと異なる場合に指定
   xpassDdnsDomain = "ddns.example.net";
   xpassFQDN = "router.example.net";
   xpassDDNSId = "ddns-id";
@@ -95,13 +96,15 @@ Nix Flakes を利用できる x86_64 NixOS 環境が必要です。
 
 値は契約先から提供された情報に置き換えてください。既存の設定も上記のような
 平坦な文字列の属性セットとして移行できます。Nix式や文字列補間は移行スクリプトが拒否します。
+旧名の `xpassDDNSPass` はBasic認証用の `xpassBasicPassword` に移行します。
+DDNS更新用には `xpassDDNSPassword` を使用します。Basic用を省略した場合はDDNS用と同じ値を使用します。
 
 **最初のNix評価・ビルド前に**、ルーター上で次の移行を実行してください。
 
 ```bash
 sudo python3 scripts/prepare_xpass_credentials.py
 # python3がない場合:
-# sudo nix shell github:NixOS/nixpkgs/nixos-26.05#python3 --command python3 scripts/prepare_xpass_credentials.py
+# sudo nix --extra-experimental-features 'nix-command flakes' shell github:NixOS/nixpkgs/nixos-26.05#python3 --command python3 scripts/prepare_xpass_credentials.py
 ```
 
 DDNS情報を `/etc/nix-router/xpass-ddns.json`（root専用、0600）に保存し、
@@ -111,6 +114,10 @@ DDNS情報を `/etc/nix-router/xpass-ddns.json`（root専用、0600）に保存�
 `xpass-env.nix` で変更してから移行スクリプトを再実行してください。
 DDNSサービスはsystemdの `LoadCredential` を使って実行時にJSONを読みます。
 JSONとバックアップはリポジトリ内へコピーしないでください。
+
+TLS証明書は既定で検証します。今回の実機の接続先は自己署名・期限切れ証明書を
+使用するため、ユーザー指定によりJSONに `"xpassDDNSVerifyTLS": false` を設定します。
+この設定では証明書・ホスト名の検証を省略します。移行スクリプトの再実行でも設定を維持します。
 
 以前の構成で秘密情報がNix storeに保存された場合、この移行では過去の生成物は
 消えません。認証情報の変更と、不要な旧世代・storeの整理を検討してください。
@@ -161,7 +168,8 @@ sudo NIXPKGS_ALLOW_UNFREE=1 \
 - Dockerが独自に公開したポートもWAN側の転送制限を受けます。必要な公開は
   `general_config.toml` に指定して `python3 generate_snat_config.py` で生成してください。
   カスタム名のDockerブリッジからの新規転送は、必要に応じて `wan-firewall.nft` で明示許可してください。
-- DDNSは証明書を検証し、認証情報をコマンド引数・サービス定義・更新ログへ出力しません。
+- DDNSはJSONの `xpassDDNSVerifyTLS` で証明書検証を選択します。
+  認証情報をコマンド引数・サービス定義・更新ログへ出力しません。
   リダイレクトは拒否します。失敗時は `journalctl -u xpass-ddns` で確認してください。
 - nftables の転送先には `192.168.0.x` が固定指定されています。現在の
   直接接続LANとは異なるため、実際のBGP経路と配下ネットワークを確認してください。

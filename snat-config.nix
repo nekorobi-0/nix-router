@@ -17,6 +17,11 @@
         iifname "ip6tnl1" tcp dport 25566 dnat to 192.168.0.103:25565
         iifname "ip6tnl1" tcp dport 25567 dnat to 192.168.0.110:25565
         iifname "ip6tnl1" tcp dport 80 dnat to 192.168.0.101:8352
+        iifname "ip6tnl1" tcp dport 8275 dnat to 192.168.0.112:8275
+        iifname "ip6tnl1" tcp dport 25569 dnat to 192.168.0.114:25565
+        iifname "ip6tnl1" tcp dport 25570 dnat to 192.168.0.115:25565
+        iifname "ip6tnl1" tcp dport 25571 dnat to 192.168.0.113:25565
+        iifname "ip6tnl1" tcp dport 25572 dnat to 192.168.0.119:25565
       }
     '';
   };
@@ -29,6 +34,11 @@
         iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.103 tcp dport 25565 ct original proto-dst 25566 counter accept
         iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.110 tcp dport 25565 ct original proto-dst 25567 counter accept
         iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.101 tcp dport 8352 ct original proto-dst 80 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.112 tcp dport 8275 ct original proto-dst 8275 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.114 tcp dport 25565 ct original proto-dst 25569 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.115 tcp dport 25565 ct original proto-dst 25570 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.113 tcp dport 25565 ct original proto-dst 25571 counter accept
+        iifname "ip6tnl1" ct status dnat ip daddr 192.168.0.119 tcp dport 25565 ct original proto-dst 25572 counter accept
       }
     '';
   };

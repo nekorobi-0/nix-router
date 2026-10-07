@@ -1,4 +1,5 @@
 import json
+import base64
 import ssl
 import sys
 from pathlib import Path
@@ -68,22 +69,62 @@ def test_partial_legacy_settings_do_not_overwrite_source(tmp_path):
     assert not (tmp_path / "protected" / "xpass-ddns.json").exists()
 
 
+def test_legacy_password_alias_preserves_both_passwords():
+    settings = dict(SETTINGS, xpassDDNSPass="basic-password")
+    parsed = migration.parse_settings(nix_settings(settings))
+    assert parsed["xpassDDNSPassword"] == SETTINGS["xpassDDNSPassword"]
+    assert "xpassDDNSPass" not in parsed
+    assert parsed["xpassBasicPassword"] == "basic-password"
+    del settings["xpassDDNSPassword"]
+    assert migration.parse_settings(nix_settings(settings))["xpassDDNSPassword"] == "basic-password"
+
+
+def test_migration_recovers_legacy_basic_password_and_keeps_tls_preference(tmp_path):
+    source = tmp_path / "xpass-env.nix"
+    source.write_text(nix_settings({key: SETTINGS[key] for key in migration.NETWORK_FIELDS}))
+    directory = tmp_path / "protected"
+    directory.mkdir()
+    (directory / "xpass-env.original.nix").write_text(nix_settings(dict(SETTINGS, xpassDDNSPass="basic-password")))
+    credential = directory / "xpass-ddns.json"
+    credential.write_text(json.dumps(dict(SETTINGS, xpassDDNSVerifyTLS=False)))
+    migration.prepare(source, directory)
+    result = json.loads(credential.read_text())
+    assert result["xpassBasicPassword"] == "basic-password"
+    assert result["xpassDDNSPassword"] == SETTINGS["xpassDDNSPassword"]
+    assert result["xpassDDNSVerifyTLS"] is False
+    result["xpassBasicPassword"] = "manually-updated-password"
+    credential.write_text(json.dumps(result))
+    migration.prepare(source, directory)
+    assert json.loads(credential.read_text())["xpassBasicPassword"] == "manually-updated-password"
+
+
 def test_password_is_encoded_and_never_in_url_authority():
     request = ddns.make_request(SETTINGS)
     parsed = urlsplit(request.full_url)
     assert parsed.scheme == "https"
     assert parsed.username is None
     assert parse_qs(parsed.query)["p"] == [SETTINGS["xpassDDNSPassword"]]
+    assert parse_qs(parsed.query)["a"] == ["2001:db8::1"]
     assert request.get_header("Authorization").startswith("Basic ")
 
 
-def test_tls_verification_and_redirect_policy(monkeypatch):
+def test_basic_and_ddns_passwords_are_separate():
+    request = ddns.make_request(dict(SETTINGS, xpassBasicPassword="basic-password"))
+    authorization = request.get_header("Authorization").removeprefix("Basic ")
+    assert base64.b64decode(authorization).decode() == "user:basic-password"
+    assert parse_qs(urlsplit(request.full_url).query)["p"] == [SETTINGS["xpassDDNSPassword"]]
+
+
+@pytest.mark.parametrize("verify_tls", [None, True, False])
+def test_tls_verification_and_redirect_policy(monkeypatch, verify_tls):
     captured = {}
 
     class Response:
         def __enter__(self): return self
         def __exit__(self, *args): pass
-        def read(self, limit): assert limit == 65536
+        def read(self, limit):
+            assert limit == 65536
+            return b"<H2>* DDNS API update : Success</H2>"
 
     class Opener:
         def open(self, request, timeout):
@@ -95,11 +136,21 @@ def test_tls_verification_and_redirect_policy(monkeypatch):
         return Opener()
 
     monkeypatch.setattr(ddns, "build_opener", build_opener)
-    ddns.update(SETTINGS)
+    settings = dict(SETTINGS)
+    if verify_tls is not None:
+        settings["xpassDDNSVerifyTLS"] = verify_tls
+    ddns.update(settings)
     https, redirects = captured["handlers"]
-    assert https._context.verify_mode == ssl.CERT_REQUIRED
-    assert https._context.check_hostname
+    assert https._context.verify_mode == (ssl.CERT_NONE if verify_tls is False else ssl.CERT_REQUIRED)
+    assert https._context.check_hostname is (verify_tls is not False)
     assert redirects.redirect_request(None, None, 302, None, None, "https://other.example") is None
+
+
+@pytest.mark.parametrize("value", ["false", 0, None])
+def test_invalid_tls_setting_never_opens_a_connection(monkeypatch, value):
+    monkeypatch.setattr(ddns, "build_opener", lambda *args: pytest.fail("invalid TLS setting opened a connection"))
+    with pytest.raises(ValueError):
+        ddns.update(dict(SETTINGS, xpassDDNSVerifyTLS=value))
 
 
 @pytest.mark.parametrize("failure", [

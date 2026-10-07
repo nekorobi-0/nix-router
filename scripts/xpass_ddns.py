@@ -1,8 +1,9 @@
-"""Update Xpass DDNS using a systemd credential and verified HTTPS."""
+"""Update Xpass DDNS using a systemd credential and configurable TLS verification."""
 
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
 import os
 import ssl
@@ -40,11 +41,14 @@ def make_request(settings: dict[str, str]) -> Request:
     query = urlencode({
         "d": settings["xpassFQDN"],
         "p": settings["xpassDDNSPassword"],
-        "a": settings["xpassIPv6Prefix"],
+        "a": str(ipaddress.IPv6Interface(settings["xpassIPv6Prefix"]).ip),
         "u": settings["xpassDDNSId"],
     })
+    basic_password = settings.get("xpassBasicPassword", settings["xpassDDNSPassword"])
+    if not isinstance(basic_password, str) or not basic_password:
+        raise ValueError("missing Basic authentication password")
     authorization = base64.b64encode(
-        f"{settings['xpassDDNSUser']}:{settings['xpassDDNSPassword']}".encode()
+        f"{settings['xpassDDNSUser']}:{basic_password}".encode()
     ).decode("ascii")
     return Request(
         f"https://{domain}/cgi-bin/ddns_api.cgi?{query}",
@@ -54,10 +58,20 @@ def make_request(settings: dict[str, str]) -> Request:
 
 def update(settings: dict[str, str]) -> None:
     request = make_request(settings)
-    opener = build_opener(HTTPSHandler(context=ssl.create_default_context()), NoRedirects())
+    verify_tls = settings.get("xpassDDNSVerifyTLS", True)
+    if not isinstance(verify_tls, bool):
+        raise ValueError("xpassDDNSVerifyTLS must be a boolean")
+    context = ssl.create_default_context()
+    if not verify_tls:
+        # Explicit compatibility setting for this provider's legacy certificate.
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+    opener = build_opener(HTTPSHandler(context=context), NoRedirects())
     with opener.open(request, timeout=30) as response:
         # Do not log a response which might contain credentials.
-        response.read(65536)
+        body = response.read(65536)
+        if b"DDNS API update : Success" not in body:
+            raise ValueError("DDNS API did not acknowledge the update")
 
 
 def main() -> int:

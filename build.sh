@@ -20,7 +20,7 @@ git pull --ff-only "$REPOSITORY" "$branch"
 if command -v python3 >/dev/null 2>&1; then
   prepare_command=("$(command -v python3)" "$PROJECT_DIR/scripts/prepare_xpass_credentials.py")
 else
-  prepare_command=(nix shell github:NixOS/nixpkgs/nixos-26.05#python3 --command python3 "$PROJECT_DIR/scripts/prepare_xpass_credentials.py")
+  prepare_command=(nix --extra-experimental-features "nix-command flakes" shell github:NixOS/nixpkgs/nixos-26.05#python3 --command python3 "$PROJECT_DIR/scripts/prepare_xpass_credentials.py")
 fi
 if [[ "$EUID" -eq 0 ]]; then
   "${prepare_command[@]}"
