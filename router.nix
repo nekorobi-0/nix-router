@@ -241,7 +241,7 @@ in
     port = 9342;
     openFirewall = false;
     disabledCollectors = [ "bfd" "ospf" ];
-    extraFlags = [ "--frr.socket.dir-path=/run/frr" ];
+    extraFlags = [ "--frr.socket.dir-path=/run/frr" "--collector.bgp.peer-hostnames" ];
   };
 
   systemd.services.prometheus-frr-exporter = {
