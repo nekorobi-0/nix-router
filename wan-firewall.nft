@@ -1,6 +1,8 @@
 # This chain runs independently of Docker and the host INPUT firewall.
 chain forward {
   type filter hook forward priority filter - 10; policy drop;
+  # LAN routes may be asymmetric; allow them before connection tracking rejects packets.
+  iifname { @LAN_INTERFACES@ } oifname { @LAN_INTERFACES@ } accept
   ct state invalid counter drop
   ct state { established, related } accept
   iifname { @LAN_INTERFACES@ } accept

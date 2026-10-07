@@ -214,6 +214,7 @@ Exporterだけを外す場合は追加したExporterとsystemdの設定を削除
   明示したIPv4ポート転送を許可し、その他の新規接続を拒否します。
   標準firewallはINPUTを担当し、FORWARDは独立した `inet wan-guard` テーブルが担当します。
 - LAN間とLANから外への通信は維持します。LAN全体の信頼と、管理UIの認証は今後の分離対策の対象です。
+  LAN間は非対称経路でも転送できるよう、接続追跡のinvalid判定より先に許可します。
 - rootの鍵認証SSHはLAN側から利用可能です。WAN側のTCP 22は開放しません。
 - Node ExporterのTCP 9100、FRR Exporterの9342とWeb UIの8080はWAN側へ開放しません。
 - Dockerが独自に公開したポートもWAN側の転送制限を受けます。必要な公開は
