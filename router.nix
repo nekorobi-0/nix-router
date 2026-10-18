@@ -174,10 +174,14 @@ in
         neighbor 172.16.0.2 dont-capability-negotiate
         neighbor 10.0.1.100 remote-as 65200
         neighbor 10.0.1.101 remote-as 65201
+        neighbor 10.0.1.102 remote-as 65202
         neighbor 10.0.1.103 remote-as 65203
+        neighbor 10.0.1.104 remote-as 65204
         neighbor 10.0.1.100 local-as 65001 no-prepend replace-as
         neighbor 10.0.1.101 local-as 65001 no-prepend replace-as
+        neighbor 10.0.1.102 local-as 65001 no-prepend replace-as
         neighbor 10.0.1.103 local-as 65001 no-prepend replace-as
+        neighbor 10.0.1.104 local-as 65001 no-prepend replace-as
         address-family ipv4 unicast
           neighbor 192.168.100.2 route-map ALLOW in
           neighbor 192.168.100.2 route-map ALLOW out
@@ -187,16 +191,24 @@ in
           neighbor 10.0.1.100 route-map ALLOW out
           neighbor 10.0.1.101 route-map ALLOW in
           neighbor 10.0.1.101 route-map ALLOW out
+          neighbor 10.0.1.102 route-map ALLOW in
+          neighbor 10.0.1.102 route-map ALLOW out
           neighbor 10.0.1.103 route-map ALLOW in
           neighbor 10.0.1.103 route-map ALLOW out
+          neighbor 10.0.1.104 route-map ALLOW in
+          neighbor 10.0.1.104 route-map ALLOW out
           neighbor 192.168.100.2 activate
           neighbor 172.16.0.2 activate
           neighbor 10.0.1.100 activate
           neighbor 10.0.1.101 activate
+          neighbor 10.0.1.102 activate
           neighbor 10.0.1.103 activate
+          neighbor 10.0.1.104 activate
           neighbor 10.0.1.100 attribute-unchanged next-hop
           neighbor 10.0.1.101 attribute-unchanged next-hop
+          neighbor 10.0.1.102 attribute-unchanged next-hop
           neighbor 10.0.1.103 attribute-unchanged next-hop
+          neighbor 10.0.1.104 attribute-unchanged next-hop
           network 0.0.0.0/0
         exit-address-family
     '';
