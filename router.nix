@@ -167,50 +167,37 @@ in
 
     config = ''
       route-map ALLOW permit 10
+      !
       router bgp 65000
-        bgp router-id 192.168.100.1
-        neighbor 192.168.100.2 remote-as 65100
-        neighbor 172.16.0.2 remote-as 65110
-        neighbor 172.16.0.2 dont-capability-negotiate
-        neighbor 10.0.1.100 remote-as 65200
-        neighbor 10.0.1.101 remote-as 65201
-        neighbor 10.0.1.102 remote-as 65202
-        neighbor 10.0.1.103 remote-as 65203
-        neighbor 10.0.1.104 remote-as 65204
-        neighbor 10.0.1.100 local-as 65001 no-prepend replace-as
-        neighbor 10.0.1.101 local-as 65001 no-prepend replace-as
-        neighbor 10.0.1.102 local-as 65001 no-prepend replace-as
-        neighbor 10.0.1.103 local-as 65001 no-prepend replace-as
-        neighbor 10.0.1.104 local-as 65001 no-prepend replace-as
-        address-family ipv4 unicast
-          neighbor 192.168.100.2 route-map ALLOW in
-          neighbor 192.168.100.2 route-map ALLOW out
-          neighbor 172.16.0.2 route-map ALLOW in
-          neighbor 172.16.0.2 route-map ALLOW out
-          neighbor 10.0.1.100 route-map ALLOW in
-          neighbor 10.0.1.100 route-map ALLOW out
-          neighbor 10.0.1.101 route-map ALLOW in
-          neighbor 10.0.1.101 route-map ALLOW out
-          neighbor 10.0.1.102 route-map ALLOW in
-          neighbor 10.0.1.102 route-map ALLOW out
-          neighbor 10.0.1.103 route-map ALLOW in
-          neighbor 10.0.1.103 route-map ALLOW out
-          neighbor 10.0.1.104 route-map ALLOW in
-          neighbor 10.0.1.104 route-map ALLOW out
-          neighbor 192.168.100.2 activate
-          neighbor 172.16.0.2 activate
-          neighbor 10.0.1.100 activate
-          neighbor 10.0.1.101 activate
-          neighbor 10.0.1.102 activate
-          neighbor 10.0.1.103 activate
-          neighbor 10.0.1.104 activate
-          neighbor 10.0.1.100 attribute-unchanged next-hop
-          neighbor 10.0.1.101 attribute-unchanged next-hop
-          neighbor 10.0.1.102 attribute-unchanged next-hop
-          neighbor 10.0.1.103 attribute-unchanged next-hop
-          neighbor 10.0.1.104 attribute-unchanged next-hop
-          network 0.0.0.0/0
-        exit-address-family
+      bgp router-id 192.168.100.1
+
+      ! Static peers
+      neighbor STATIC peer-group
+      neighbor 192.168.100.2 remote-as 65100
+      neighbor 192.168.100.2 peer-group STATIC
+      neighbor 172.16.0.2 remote-as 65110
+      neighbor 172.16.0.2 peer-group STATIC
+      neighbor 172.16.0.2 dont-capability-negotiate
+
+      ! Dynamic peers
+      neighbor DYNAMIC peer-group
+      neighbor DYNAMIC remote-as external
+      neighbor DYNAMIC local-as 65001 no-prepend replace-as
+
+      bgp listen range 10.0.1.0/24 peer-group DYNAMIC
+
+      address-family ipv4 unicast
+        neighbor STATIC activate
+        neighbor STATIC route-map ALLOW in
+        neighbor STATIC route-map ALLOW out
+
+        neighbor DYNAMIC activate
+        neighbor DYNAMIC route-map ALLOW in
+        neighbor DYNAMIC route-map ALLOW out
+        neighbor DYNAMIC attribute-unchanged next-hop
+
+        network 0.0.0.0/0
+      exit-address-family
     '';
   };
   # ── DDNS 更新サービス ────────────────────────────────────────────────
