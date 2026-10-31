@@ -178,6 +178,8 @@ in
       neighbor 172.16.0.2 remote-as 65110
       neighbor 172.16.0.2 peer-group STATIC
       neighbor 172.16.0.2 dont-capability-negotiate
+      neighbor 192.168.0.3 remote-as 65001
+      neighbor 192.168.0.3 peer-group STATIC
 
       ! Dynamic peers
       neighbor DYNAMIC peer-group
